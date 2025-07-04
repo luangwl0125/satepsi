@@ -63,16 +63,19 @@ SATEPSI_URL = "https://satepsi.cfp.org.br/"
 
 # Mapeamento de campos do SATEPSI para o formato interno
 FIELD_MAP = {
+    "Nome": "Nome",
     "Status": "Status",
     "Autores": "Autores",
     "Editora": "Editora",
     "Construto": "Construto",
-    "Público-alvo": "PublicoAlvo",
-    "Idade da amostra": "IdadeAmostra",
+    "Público Alvo": "PublicoAlvo",
+    "Idade da amostra de normatização": "IdadeAmostra",
     "Aplicação": "Aplicacao",
     "Correção": "Correcao",
-    "Data de aprovação": "DataAprovacao",
+    "Data aprovação": "DataAprovacao",
+    "Prazo dos estudos de normatização": "PrazoNormatizacao",
     "Prazo dos estudos de validade": "PrazoEstudos",
+    "Observação": "Observacoes",
     "Observações": "Observacoes"
 }
 
