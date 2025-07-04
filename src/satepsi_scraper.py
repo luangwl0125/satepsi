@@ -102,6 +102,7 @@ def parse_html(soup: BeautifulSoup) -> List[Dict]:
         # Inicializa o registro
         rec = {v: "" for v in FIELD_MAP.values()}
         rec["Status"] = status
+        rec["Nome"] = title
         
         # Procura por todas as linhas de informação
         for row in item.find_all("div", class_="row"):
@@ -112,7 +113,7 @@ def parse_html(soup: BeautifulSoup) -> List[Dict]:
                 continue
                 
             label_text = label.get_text(strip=True).rstrip(":")
-            value_text = value.get_text(strip=True)
+            value_text = value.get_text(" ", strip=True)
             
             # Mapeia o campo
             key = FIELD_MAP.get(label_text)
@@ -244,7 +245,8 @@ def save_excel(data: List[Dict], path: Path) -> None:
         data (List[Dict]): Dados a serem salvos
         path (Path): Caminho do arquivo de saída
     """
-    cols = list(FIELD_MAP.values())
+    # Garante que a coluna 'Nome' seja a primeira
+    cols = ["Nome"] + [c for c in FIELD_MAP.values() if c != "Nome"]
     df = pd.DataFrame(data, columns=cols)
     df.to_excel(path, index=False)
 
@@ -299,19 +301,19 @@ def send_email(changes: List[Tuple[str, str, str]]) -> None:
         estiverem disponíveis
     """
     if not EMAIL_CONFIG:
-        print("⚠️ Aviso: Configurações de e-mail faltando: SMTP_HOST, SMTP_USER, SMTP_PASS, EMAIL_FROM, EMAIL_TO")
+        print("[AVISO] Configurações de e-mail faltando: SMTP_HOST, SMTP_USER, SMTP_PASS, EMAIL_FROM, EMAIL_TO")
         return
         
     try:
         # Configura servidor SMTP
-        server = smtplib.SMTP(EMAIL_CONFIG["smtp_host"], EMAIL_CONFIG["smtp_port"])
+        server = smtplib.SMTP(EMAIL_CONFIG["SMTP_HOST"], EMAIL_CONFIG["SMTP_PORT"])
         server.starttls()
-        server.login(EMAIL_CONFIG["smtp_user"], EMAIL_CONFIG["smtp_pass"])
+        server.login(EMAIL_CONFIG["SMTP_USER"], EMAIL_CONFIG["SMTP_PASS"])
         
         # Prepara mensagem
         msg = MIMEMultipart()
-        msg["From"] = EMAIL_CONFIG["email_from"]
-        msg["To"] = EMAIL_CONFIG["email_to"]
+        msg["From"] = EMAIL_CONFIG["EMAIL_FROM"]
+        msg["To"] = EMAIL_CONFIG["EMAIL_TO"]
         msg["Subject"] = "Atualização Satepsi"
         
         # Corpo do e-mail
@@ -321,7 +323,7 @@ def send_email(changes: List[Tuple[str, str, str]]) -> None:
         if changes:
             body += "Foram detectadas as seguintes alterações:\n\n"
             for name, old, new in changes:
-                body += f"- {name}: {old} → {new}\n"
+                body += f"- {name}: {old} -> {new}\n"
         else:
             body += "Nenhuma alteração foi detectada.\n"
             
@@ -335,10 +337,10 @@ Sistema de Monitoramento Satepsi"""
         # Envia e-mail
         server.send_message(msg)
         server.quit()
-        print("✅ E-mail enviado com sucesso!")
+        print("[SUCESSO] E-mail enviado com sucesso!")
         
     except Exception as e:
-        print(f"⚠️ Erro ao enviar e-mail: {str(e)}")
+        print(f"[ERRO] Erro ao enviar e-mail: {str(e)}")
 
 # ── FUNÇÃO PRINCIPAL ───────────────────────────────────────────────────────────
 
@@ -364,10 +366,10 @@ def main():
         return
         
     if not instruments:
-        print("⚠️ Nenhum instrumento encontrado.")
+        print("[AVISO] Nenhum instrumento encontrado.")
         return
         
-    print(f"✅ {len(instruments)} instrumentos extraídos com sucesso.")
+    print(f"[SUCESSO] {len(instruments)} instrumentos extraídos com sucesso.")
     
     # 2) Salva dados em diferentes formatos
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -375,17 +377,17 @@ def main():
     # JSON
     json_path = get_timestamp_filename("satepsi_data", "json")
     save_json(instruments, json_path)
-    print(f"✅ Dados salvos em JSON: {json_path}")
+    print(f"[SUCESSO] Dados salvos em JSON: {json_path}")
     
     # Excel
     excel_path = get_timestamp_filename("satepsi_data", "xlsx")
     save_excel(instruments, excel_path)
-    print(f"✅ Dados salvos em Excel: {excel_path}")
+    print(f"[SUCESSO] Dados salvos em Excel: {excel_path}")
     
     # Word
     word_path = get_timestamp_filename("satepsi_report", "docx")
     generate_word(instruments, word_path)
-    print(f"✅ Relatório gerado em Word: {word_path}")
+    print(f"[SUCESSO] Relatório gerado em Word: {word_path}")
     
     # 3) Verifica alterações
     if PREVIOUS_DATA_FILE.exists():
@@ -395,7 +397,7 @@ def main():
         if changes:
             print("\nAlterações detectadas:")
             for name, old, new in changes:
-                print(f"- {name}: {old} → {new}")
+                print(f"- {name}: {old} -> {new}")
         
         # Envia e-mail independente de haver alterações
         send_email(changes)
@@ -405,7 +407,7 @@ def main():
     
     # 4) Atualiza histórico
     save_json(instruments, PREVIOUS_DATA_FILE)
-    print(f"✅ Histórico atualizado: {PREVIOUS_DATA_FILE}")
+    print(f"[SUCESSO] Histórico atualizado: {PREVIOUS_DATA_FILE}")
 
 if __name__ == "__main__":
     main() 
